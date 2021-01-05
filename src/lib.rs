@@ -70,17 +70,18 @@ impl Plugin for TestPlugin {
     let (_, mut output_buffer) = buffer.split();
 
     let mut x : f32 = 0.0;
-    let p : f32 = 1.0;
+
+    let two : f32 = 2.0;
+
+    let freq : f32 = 440.0*two.powf((f32::from(self.note)-69.0)/12.0); // coming out 3 octaves too high
+    let p : f32 = 1.0/freq;
     let pi = std::f32::consts::PI;
 
     for output_channel in output_buffer.into_iter() {
         for output_sample in output_channel {
-            let constant : f32 = -2.0;
-
-            // sawwave
-            *output_sample = constant*(f32::from(self.velocity)/pi) * (x*pi/p).cot().atan();
+            // supposed to be a sawwave
+            *output_sample = -two*(f32::from(self.velocity)/pi) * (x*pi/p).cot().atan(); //excessive high end
             x = x + 1.0;
-            // *output_sample = f32::from(f64::from(-2)*(f64::from(self.velocity)/pi) * (f64::from(x)*pi/f64::from(p)).cot().atan())
         }
     }
   }
