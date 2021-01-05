@@ -11,22 +11,22 @@ use vst::api::Events;
 #[derive(Default)]
 struct TestPlugin {
     note: u8,
-    velocity: u8
+    velocity: u8,
+    note_length: i32
 }
 
 impl Plugin for TestPlugin {
   fn get_info(&self) -> Info {
       Info {
-          name: "Test Plugin".to_string(),
+          name: "SawMang".to_string(),
           unique_id: 1337, // Used by hosts to differentiate between plugins.
-          version: 0002,
+          version: 0003,
 
           // For audio inputs
           inputs: 0,
           // Two outputs for stereo. Default
           outputs: 2,
 
-          // Ableton still doesn't recognize correctly
           category: Category::Synth,
 
           ..Default::default()
@@ -35,6 +35,7 @@ impl Plugin for TestPlugin {
 
   fn process_events(&mut self, events: &Events) {
     // Filters out SysEx events
+    // Need to implement Running Status
     for event in events.events() {
         match event {
             Event::Midi(ev) => {
@@ -44,16 +45,18 @@ impl Plugin for TestPlugin {
                     // note on
                     144 => { 
                       self.note = ev.data[1];
-                      self.velocity = ev.data[2]
+                      self.velocity = ev.data[2];
+                      self.note_length = ev.note_length.unwrap_or(0);
                     },
 
                     // note off, currently doesn't seem to be working
                     128 => { 
                       self.note = 0;
-                      self.velocity = 0
+                      self.velocity = 0;
                     },
                     _ => (),
                 }
+
             },
             // Do nothing for any other type of event (read: SysEx)
             _ => ()
@@ -80,7 +83,16 @@ impl Plugin for TestPlugin {
     for output_channel in output_buffer.into_iter() {
         for output_sample in output_channel {
             // supposed to be a sawwave
-            *output_sample = -two*(f32::from(self.velocity)/pi) * (x*pi/p).cot().atan(); //excessive high end
+            *output_sample = (-two*(f32::from(self.velocity)/pi) * (x*pi/p).cot().atan())/two; //excessive high end and too loud still
+            let note_length : i32 = self.note_length;
+            match note_length {
+              0 => {}
+              1 => {
+                self.note_length = 0;
+                self.velocity = 0;
+              }
+              _ => { self.note_length = note_length - 1 }
+            } 
             x = x + 1.0;
         }
     }
