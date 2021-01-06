@@ -6,13 +6,19 @@ use vst::plugin::{Info, Plugin, Category};
 use vst::buffer::AudioBuffer;
 use vst::event::Event;
 use vst::api::Events;
+
+mod waves;
+
+// use crate::Cotangent;
+
 // use rand::random;
 
 #[derive(Default)]
 struct TestPlugin {
     note: u8,
     velocity: u8,
-    note_length: i32
+    note_length: i32,
+    loudness: u8
 }
 
 impl Plugin for TestPlugin {
@@ -74,16 +80,15 @@ impl Plugin for TestPlugin {
 
     let mut x : f32 = 0.0;
 
-    let two : f32 = 2.0;
+  
 
-    let freq : f32 = 440.0*two.powf((f32::from(self.note)-69.0)/12.0); // coming out 3 octaves too high
-    let p : f32 = 1.0/freq;
-    let pi = std::f32::consts::PI;
+    let freq : f32 = 440.0*f32::from(2.0).powf((f32::from(self.note)-69.0)/12.0); // coming out 3 octaves too high
+    let _p : f32 = 1.0/freq;
+    // let pi = ;
 
     for output_channel in output_buffer.into_iter() {
         for output_sample in output_channel {
-            // supposed to be a sawwave
-            *output_sample = (-two*(f32::from(self.velocity)/pi) * (x*pi/p).cot().atan())/two; //excessive high end and too loud still
+            *output_sample = waves::sin(f32::from(self.velocity*self.loudness),freq,*output_sample);
             let note_length : i32 = self.note_length;
             match note_length {
               0 => {}
@@ -98,19 +103,6 @@ impl Plugin for TestPlugin {
     }
   }
 }
-
-// Cotangent is Cos/Sin
-trait Cotangent {
-    fn cot(&self) -> f32;
-}
-
-impl Cotangent for f32 {
-    fn cot(&self) -> f32 {
-      self.cos()/self.sin() as f32
-    }
-}
-
-
 
 plugin_main!(TestPlugin); // Important!
 
